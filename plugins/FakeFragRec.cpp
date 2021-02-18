@@ -12,7 +12,7 @@
 
 #include "TRACE/trace.h"
 #include "appfwk/DAQModuleHelper.hpp"
-#include "appfwk/cmd/Nljs.hpp"
+#include "appfwk/app/Nljs.hpp"
 #include "ers/ers.h"
 
 #include <chrono>
@@ -63,7 +63,7 @@ FakeFragRec::init(const data_t& init_data)
   }
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 
-  auto ini = init_data.get<appfwk::cmd::ModInit>();
+  auto ini = init_data.get<appfwk::app::ModInit>();
   for (const auto& qitem : ini.qinfos) {
     if (qitem.name.rfind("data_fragment_") == 0) {
       try {

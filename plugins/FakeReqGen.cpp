@@ -12,7 +12,7 @@
 
 #include "TRACE/trace.h"
 #include "appfwk/DAQModuleHelper.hpp"
-#include "appfwk/cmd/Nljs.hpp"
+#include "appfwk/app/Nljs.hpp"
 #include "ers/ers.h"
 
 #include <chrono>
@@ -71,7 +71,7 @@ FakeReqGen::init(const data_t& init_data)
     throw InvalidQueueFatalError(ERS_HERE, get_name(), "trigger_decision_for_inhibit", excpt);
   }
 
-  auto ini = init_data.get<appfwk::cmd::ModInit>();
+  auto ini = init_data.get<appfwk::app::ModInit>();
   for (const auto& qitem : ini.qinfos) {
     if (qitem.name.rfind("data_request_") == 0) {
       try {

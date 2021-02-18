@@ -11,6 +11,7 @@
 #include "dfmodules/KeyedDataBlock.hpp"
 #include "dfmodules/StorageKey.hpp"
 #include "dfmodules/datawriter/Nljs.hpp"
+#include "dfmodules/datawriterinfo/Nljs.hpp"
 
 #include "TRACE/trace.h"
 #include "appfwk/DAQModuleHelper.hpp"
@@ -85,6 +86,16 @@ DataWriter::init(const data_t& init_data)
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting init() method";
 }
 
+void
+DataWriter::get_info(opmonlib::InfoCollector& ci, int /*level*/) {
+  datawriterinfo::Info dwi;
+
+  dwi.records = m_records_count_tot.load();
+  dwi.new_records = m_records_count.exchange(0);
+
+  ci.add(dwi);
+
+}
 void
 DataWriter::do_conf(const data_t& payload)
 {
@@ -164,8 +175,8 @@ void
 DataWriter::do_work(std::atomic<bool>& running_flag)
 {
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Entering do_work() method";
-  int32_t received_count = 0;
-
+  m_records_count = 0;
+  m_records_count_tot = 0;
   // ensure that we have a valid dataWriter instance
   if (m_data_writer.get() == nullptr) {
     throw InvalidDataWriterError(ERS_HERE, get_name());
@@ -177,7 +188,8 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     // receive the next TriggerRecord
     try {
       m_trigger_record_input_queue->pop(trigger_record_ptr, m_queue_timeout);
-      ++received_count;
+      ++m_records_count;
+      ++m_records_count_tot;
       TLOG(TLVL_WORK_STEPS) << get_name() << ": Popped the TriggerRecord for trigger number "
                             << trigger_record_ptr->get_header_ref().get_trigger_number() << " off the input queue";
     } catch (const dunedaq::appfwk::QueueTimeoutExpired& excpt) {
@@ -190,7 +202,7 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
     // In this "if" statement, I deliberately compare the result of (N mod prescale) to 1,
     // instead of zero, since I think that it would be nice to always get the first event
     // written out.
-    if (m_data_storage_prescale <= 1 || ((received_count % m_data_storage_prescale) == 1)) {
+    if (m_data_storage_prescale <= 1 || ((m_records_count_tot.load() % m_data_storage_prescale) == 1)) {
 
       // First store the trigger record header
       const void* trh_ptr = trigger_record_ptr->get_header_ref().get_storage_location();
@@ -260,22 +272,11 @@ DataWriter::do_work(std::atomic<bool>& running_flag)
       }
     }
 
-    // progress updates
-    if ((received_count % 3) == 0) {
-      std::ostringstream oss_prog;
-      oss_prog << ": Processing trigger number " << trigger_record_ptr->get_header_ref().get_trigger_number()
-               << ", this is one of " << received_count << " trigger records received so far.";
-      ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_prog.str()));
-    }
-
     // tell the TriggerInhibitAgent the trigger_number of this TriggerRecord so that
     // it can check whether an Inhibit needs to be asserted or cleared.
     m_trigger_inhibit_agent->set_latest_trigger_number(trigger_record_ptr->get_header_ref().get_trigger_number());
   }
 
-  std::ostringstream oss_summ;
-  oss_summ << ": Exiting the do_work() method, received trigger record messages for " << received_count << " triggers.";
-  ers::log(ProgressUpdate(ERS_HERE, get_name(), oss_summ.str()));
   TLOG(TLVL_ENTER_EXIT_METHODS) << get_name() << ": Exiting do_work() method";
 }
 

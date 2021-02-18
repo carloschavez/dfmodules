@@ -10,6 +10,9 @@ find_package(appfwk REQUIRED)
 find_package(HighFive REQUIRED)
 find_package(dfmessages REQUIRED)
 
+daq_codegen_schema(*.jsonnet TEMPL Structs.hpp Nljs.hpp )
+
+
 ##############################################################################
 daq_add_library( StorageKey.cpp TriggerDecisionForwarder.cpp TriggerInhibitAgent.cpp
                  LINK_LIBRARIES 

@@ -42,6 +42,7 @@ public:
   DataWriter& operator=(DataWriter&&) = delete;      ///< DataWriter is not move-assignable
 
   void init(const data_t&) override;
+  void get_info(opmonlib::InfoCollector& ci, int level) override;
 
 private:
   // Commands
@@ -68,6 +69,9 @@ private:
   // Worker(s)
   std::unique_ptr<DataStore> m_data_writer;
   std::unique_ptr<TriggerInhibitAgent> m_trigger_inhibit_agent;
+
+  std::atomic<uint64_t> m_records_count={0};
+  std::atomic<uint64_t> m_records_count_tot={0};
 };
 } // namespace dfmodules
 
