@@ -93,7 +93,7 @@ RequestGenerator::do_conf(const data_t& payload)
   requestgenerator::ConfParams parsed_conf = payload.get<requestgenerator::ConfParams>();
 
   for (auto const& entry : parsed_conf.map) {
-    dataformats::GeoID key;
+      dataformats::GeoID key;
     key.m_apa_number = entry.apa;
     key.m_link_number = entry.link;
     m_map_geoid_queues[key] = entry.queueinstance;
